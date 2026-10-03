@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="عمولة البطاقات">
+<meta name="theme-color" content="#0b1330">
+<title>حاسبة عمولة البطاقات البنكية</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;900&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root{
+    --bg:#f1f5f9;
+    --navy-900:#0b1330;
+    --navy-800:#101a3d;
+    --blue-700:#1d4ed8;
+    --blue-600:#2563eb;
+    --blue-500:#3b82f6;
+    --green:#15803d;
+    --green-bg:#dcfce7;
+    --red:#b91c1c;
+    --red-bg:#fee2e2;
+    --ink:#0f172a;
+    --muted:#64748b;
+    --card:#ffffff;
+    --line:#e2e8f0;
+  }
+  html,body{
+    background:var(--bg);
+    font-family:'Tajawal',sans-serif;
+    color:var(--ink);
+    height:100%;
+  }
+  body{
+    padding-top:env(safe-area-inset-top,0px);
+    padding-bottom:env(safe-area-inset-bottom,0px);
+    -webkit-tap-highlight-color:transparent;
+  }
+  input[type=number]::-webkit-inner-spin-button,
+  input[type=number]::-webkit-outer-spin-button{
+    -webkit-appearance:none;
+    margin:0;
+  }
+  input[type=number]{ -moz-appearance:textfield; }
+
+  .soft-shadow{ box-shadow: 0 10px 30px -12px rgba(15,23,42,0.15); }
+  .card-shadow{ box-shadow: 0 1px 2px rgba(15,23,42,0.04), 0 8px 24px -10px rgba(15,23,42,0.12); }
+
+  .hero-gradient{
+    background: radial-gradient(120% 140% at 15% 0%, #1e3a8a 0%, #0b1330 55%, #060a1a 100%);
+  }
+
+  .choice-card{
+    transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+    border: 1.5px solid var(--line);
+  }
+  .choice-card:active{ transform: scale(0.98); }
+  .choice-card:hover{
+    border-color:#93c5fd;
+    box-shadow: 0 12px 28px -14px rgba(37,99,235,0.35);
+  }
+
+  .locked-field{
+    background:#eef1f5;
+    color:#64748b;
+  }
+
+  .calc-btn{
+    background: linear-gradient(135deg, var(--blue-600), var(--blue-700));
+    transition: transform .12s ease, box-shadow .12s ease;
+  }
+  .calc-btn:active{ transform: translateY(1px) scale(0.995); }
+
+  @keyframes slideUp{
+    from{ opacity:0; transform: translateY(18px); }
+    to{ opacity:1; transform: translateY(0); }
+  }
+  .slide-up{ animation: slideUp .5s cubic-bezier(.2,.7,.2,1) both; }
+  .slide-up-d1{ animation-delay: .05s; }
+  .slide-up-d2{ animation-delay: .12s; }
+  .slide-up-d3{ animation-delay: .19s; }
+
+  ::placeholder{ color:#94a3b8; }
+
+  .field-label{ font-size:0.85rem; color:var(--muted); }
+
+  .screen{ min-height:100%; }
+
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#0b1020;
+      --card:#141b31;
+      --line:#232c47;
+      --ink:#e7ecf7;
+      --muted:#95a0bf;
+      --locked-bg:#1b2340;
+    }
+    .locked-field{ background:#1b2340; color:#95a0bf; }
+  }
+  :root[data-theme="dark"]{
+    --bg:#0b1020;
+    --card:#141b31;
+    --line:#232c47;
+    --ink:#e7ecf7;
+    --muted:#95a0bf;
+  }
+</style>
+</head>
+<body style="background:var(--bg); color:var(--ink);">
+
+<!-- ======================= الشاشة الرئيسية ======================= -->
+<div id="landing-screen" class="screen">
+  <div class="hero-gradient text-white px-6 pt-14 pb-16 md:pt-20 md:pb-24">
+    <div class="max-w-3xl mx-auto text-center">
+      <h1 class="text-2xl md:text-4xl font-black leading-snug">
+        هل تعرف كم يأخذ البنك من عمولة مخفية؟
+      </h1>
+      <p class="mt-4 text-slate-300 text-sm md:text-lg font-medium leading-relaxed">
+        اكتشف التكلفة الحقيقية لمشترياتك الدولية، وقارن بين سعر بطاقتك وسعر السوق الموازي بضغطة زر
+      </p>
+    </div>
+  </div>
+
+  <div class="max-w-3xl mx-auto px-6 -mt-8 md:-mt-10 pb-16">
+    <h2 class="text-center text-lg md:text-xl font-bold mb-6" style="color:var(--ink)">من أين تتسوق اليوم؟</h2>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <button id="card-sar" class="choice-card rounded-2xl card-shadow p-8 text-center cursor-pointer" style="background:var(--card)">
+        <div class="text-5xl mb-3">🇸🇦</div>
+        <div class="text-xl font-bold" style="color:var(--ink)">الريال السعودي</div>
+      </button>
+
+      <button id="card-try" class="choice-card rounded-2xl card-shadow p-8 text-center cursor-pointer" style="background:var(--card)">
+        <div class="text-5xl mb-3">🇹🇷</div>
+        <div class="text-xl font-bold" style="color:var(--ink)">الليرة التركية</div>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ======================= شاشة الحاسبة ======================= -->
+<div id="calc-screen" class="screen" style="display:none;">
+
+  <div class="sticky top-0 z-10 flex items-center justify-between px-5 py-4" style="background:var(--card); border-bottom:1px solid var(--line); padding-top:calc(env(safe-area-inset-top,0px) + 1rem);">
+    <button id="back-btn" class="flex items-center gap-1 text-sm font-bold" style="color:var(--blue-600)">
+      <span>↺</span><span>العودة</span>
+    </button>
+    <div id="currency-title" class="text-base font-bold" style="color:var(--ink)"></div>
+    <div style="width:56px"></div>
+  </div>
+
+  <div class="max-w-xl mx-auto px-5 py-6 space-y-5">
+
+    <!-- المدخلات -->
+    <div class="rounded-2xl card-shadow p-5 space-y-5" style="background:var(--card)">
+
+      <div>
+        <label class="field-label block mb-1.5">مبلغ الشراء (<span id="unit-label-1"></span>)</label>
+        <div class="relative">
+          <input id="purchase-amount" type="number" inputmode="decimal" placeholder="0" class="w-full rounded-xl px-4 py-3 text-lg font-bold border outline-none" style="border-color:var(--line); background:var(--card); color:var(--ink)">
+          <span id="unit-label-2" class="absolute left-4 top-1/2 -translate-y-1/2 text-sm font-bold" style="color:var(--muted)"></span>
+        </div>
+      </div>
+
+      <div>
+        <label class="field-label block mb-1.5">سعر صرف الدولار</label>
+        <input id="usd-fx-rate" type="number" inputmode="decimal" step="0.01" class="w-full rounded-xl px-4 py-3 text-lg font-bold border outline-none" style="border-color:var(--line); color:var(--ink)">
+        <p id="fx-note" class="text-xs mt-1.5" style="color:var(--muted)"></p>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="field-label block mb-1.5">الدولار الرسمي (IQD)</label>
+          <input id="official-rate" type="number" inputmode="decimal" value="1320" class="w-full rounded-xl px-3 py-3 text-base font-bold border outline-none" style="border-color:var(--line); color:var(--ink)">
+        </div>
+        <div>
+          <label class="field-label block mb-1.5">الدولار الموازي (IQD)</label>
+          <input id="parallel-rate" type="number" inputmode="decimal" value="1550" class="w-full rounded-xl px-3 py-3 text-base font-bold border outline-none" style="border-color:var(--line); color:var(--ink)">
+        </div>
+      </div>
+
+      <div class="rounded-xl p-4" style="background:#eff6ff; border:1.5px solid #bfdbfe;">
+        <label class="block mb-1.5 text-sm font-bold" style="color:var(--blue-700)">كم خصم البنك من بطاقتك؟ (IQD)</label>
+        <input id="bank-deduction" type="number" inputmode="decimal" placeholder="0" class="w-full rounded-xl px-4 py-3 text-lg font-bold border outline-none" style="border-color:#93c5fd; background:var(--card); color:var(--ink)">
+      </div>
+
+      <button id="calc-btn" class="calc-btn w-full rounded-xl py-4 text-white font-bold text-base shadow-lg">
+        احسب التكلفة الآن
+      </button>
+    </div>
+
+    <!-- حالة الانتظار -->
+    <div id="waiting-state" class="rounded-2xl p-10 text-center" style="background:var(--card); border:1.5px dashed var(--line);">
+      <div class="text-4xl mb-3">🔍</div>
+      <div class="font-bold" style="color:var(--muted)">أين الحقيقة؟</div>
+      <p class="text-sm mt-1" style="color:var(--muted)">أدخل بياناتك واضغط "احسب" لتكتشف الحقيقة</p>
+    </div>
+
+    <!-- النتائج -->
+    <div id="results-state" style="display:none;" class="space-y-4">
+
+      <div class="grid grid-cols-2 gap-3">
+        <div class="slide-up slide-up-d1 rounded-2xl p-4 text-center card-shadow" style="background:var(--card)">
+          <div class="field-label mb-1">القيمة بالدولار</div>
+          <div id="usd-value" class="text-xl font-black" style="color:var(--ink)">$0</div>
+        </div>
+        <div id="diff-card" class="slide-up slide-up-d1 rounded-2xl p-4 text-center card-shadow">
+          <div id="diff-label" class="field-label mb-1"></div>
+          <div id="diff-value" class="text-xl font-black">0</div>
+        </div>
+      </div>
+
+      <div class="slide-up slide-up-d2 rounded-2xl p-6 text-center" style="background: linear-gradient(135deg, var(--navy-900), var(--navy-800)); box-shadow:0 20px 40px -18px rgba(11,19,48,0.55);">
+        <div class="text-slate-300 text-sm font-medium mb-1">سعر الدولار الفعلي لبطاقتك</div>
+        <div id="actual-rate" class="text-white text-4xl md:text-5xl font-black mb-4">0 IQD</div>
+        <div class="h-px w-16 mx-auto mb-4" style="background:rgba(255,255,255,0.15)"></div>
+        <div class="text-slate-300 text-sm font-medium mb-1">العمولة المخفية</div>
+        <div id="hidden-commission" class="text-3xl font-black">0%</div>
+      </div>
+
+      <div class="slide-up slide-up-d3 rounded-2xl p-5 card-shadow" style="background:var(--card)">
+        <div class="max-w-sm mx-auto relative" style="height:220px;">
+          <canvas id="comparison-chart"></canvas>
+        </div>
+        <div class="flex justify-center gap-4 mt-3 text-xs font-bold">
+          <span style="color:#94a3b8">● الرسمي</span>
+          <span style="color:var(--blue-600)">● بطاقتك</span>
+          <span style="color:#dc2626">● الموازي</span>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+</div>
+
+<script>
+(function(){
+  var state = {
+    currency: null, // 'SAR' or 'TRY'
+    chart: null
+  };
+
+  var landingScreen = document.getElementById('landing-screen');
+  var calcScreen = document.getElementById('calc-screen');
+
+  function goToCalc(currency){
+    state.currency = currency;
+
+    var titleEl = document.getElementById('currency-title');
+    var unit1 = document.getElementById('unit-label-1');
+    var unit2 = document.getElementById('unit-label-2');
+    var fxInput = document.getElementById('usd-fx-rate');
+    var fxNote = document.getElementById('fx-note');
+
+    if(currency === 'SAR'){
+      titleEl.textContent = 'الريال السعودي 🇸🇦';
+      unit1.textContent = 'SAR';
+      unit2.textContent = 'SAR';
+      fxInput.value = '3.75';
+      fxInput.readOnly = true;
+      fxInput.classList.add('locked-field');
+      fxNote.textContent = 'سعر ثابت مرتبط بالدولار';
+    } else {
+      titleEl.textContent = 'الليرة التركية 🇹🇷';
+      unit1.textContent = 'TRY';
+      unit2.textContent = 'TRY';
+      fxInput.value = '48.91';
+      fxInput.readOnly = false;
+      fxInput.classList.remove('locked-field');
+      fxInput.placeholder = 'جاري تحديث السعر...';
+      fxNote.textContent = 'سعر تقريبي، جاري محاولة تحديثه تلقائياً';
+      fetchLiraRate();
+    }
+
+    resetResults();
+    landingScreen.style.display = 'none';
+    calcScreen.style.display = 'block';
+    window.scrollTo(0,0);
+  }
+
+  function fetchLiraRate(){
+    var fxInput = document.getElementById('usd-fx-rate');
+    var fxNote = document.getElementById('fx-note');
+    fetch('https://open.er-api.com/v6/latest/USD')
+      .then(function(res){ return res.json(); })
+      .then(function(data){
+        if(data && data.rates && data.rates.TRY){
+          fxInput.value = data.rates.TRY.toFixed(2);
+          fxInput.placeholder = '';
+          fxNote.textContent = 'تم تحديث السعر تلقائياً، ويمكنك تعديله يدوياً';
+        } else {
+          throw new Error('no rate');
+        }
+      })
+      .catch(function(){
+        fxInput.value = '48.91';
+        fxNote.textContent = 'تعذر التحديث التلقائي، السعر المعروض تقريبي (48.91) ويمكنك تعديله يدوياً';
+      });
+  }
+
+  function resetResults(){
+    document.getElementById('waiting-state').style.display = 'block';
+    document.getElementById('results-state').style.display = 'none';
+    document.getElementById('purchase-amount').value = '';
+    document.getElementById('bank-deduction').value = '';
+  }
+
+  document.getElementById('card-sar').onclick = function(){ goToCalc('SAR'); };
+  document.getElementById('card-try').onclick = function(){ goToCalc('TRY'); };
+
+  document.getElementById('back-btn').onclick = function(){
+    calcScreen.style.display = 'none';
+    landingScreen.style.display = 'block';
+    window.scrollTo(0,0);
+  };
+
+  document.getElementById('calc-btn').onclick = function(){
+    var purchaseAmount = parseFloat(document.getElementById('purchase-amount').value);
+    var fxRate = parseFloat(document.getElementById('usd-fx-rate').value);
+    var officialRate = parseFloat(document.getElementById('official-rate').value);
+    var parallelRate = parseFloat(document.getElementById('parallel-rate').value);
+    var bankDeduction = parseFloat(document.getElementById('bank-deduction').value);
+
+    if(!purchaseAmount || !fxRate || !officialRate || !parallelRate || !bankDeduction){
+      alert('الرجاء تعبئة جميع الحقول بأرقام صحيحة');
+      return;
+    }
+
+    // الخوارزمية
+    var usdValue = purchaseAmount / fxRate;
+    var officialCost = usdValue * officialRate;
+    var parallelCost = usdValue * parallelRate;
+    var actualBankRate = bankDeduction / usdValue;
+    var hiddenCommission = ((actualBankRate / officialRate) - 1) * 100;
+    var savings = parallelCost - bankDeduction;
+
+    renderResults({
+      usdValue: usdValue,
+      officialCost: officialCost,
+      parallelCost: parallelCost,
+      bankDeduction: bankDeduction,
+      actualBankRate: actualBankRate,
+      hiddenCommission: hiddenCommission,
+      savings: savings
+    });
+  };
+
+  function fmt(n, d){
+    d = (d === undefined) ? 0 : d;
+    return n.toLocaleString('en-US', {minimumFractionDigits:d, maximumFractionDigits:d});
+  }
+
+  function renderResults(r){
+    document.getElementById('waiting-state').style.display = 'none';
+    var resultsEl = document.getElementById('results-state');
+    resultsEl.style.display = 'block';
+
+    document.getElementById('usd-value').textContent = '$' + fmt(r.usdValue, 2);
+
+    var diffCard = document.getElementById('diff-card');
+    var diffLabel = document.getElementById('diff-label');
+    var diffValue = document.getElementById('diff-value');
+    diffLabel.textContent = 'الفرق عن الموازي';
+    if(r.savings >= 0){
+      diffCard.style.background = 'var(--green-bg)';
+      diffValue.style.color = 'var(--green)';
+      diffValue.textContent = 'وفرت ' + fmt(r.savings) + ' د.ع';
+    } else {
+      diffCard.style.background = 'var(--red-bg)';
+      diffValue.style.color = 'var(--red)';
+      diffValue.textContent = 'خسرت ' + fmt(Math.abs(r.savings)) + ' د.ع';
+    }
+
+    document.getElementById('actual-rate').textContent = fmt(r.actualBankRate, 0) + ' IQD';
+
+    var commissionEl = document.getElementById('hidden-commission');
+    commissionEl.textContent = (r.hiddenCommission >= 0 ? '' : '') + fmt(r.hiddenCommission, 2) + '%';
+    commissionEl.style.color = (r.hiddenCommission <= 3.5) ? '#4ade80' : '#f87171';
+
+    drawChart(r.officialCost, r.bankDeduction, r.parallelCost);
+
+    // إعادة تشغيل حركة الظهور
+    ['slide-up-d1','slide-up-d2','slide-up-d3'].forEach(function(cls){
+      document.querySelectorAll('.' + cls).forEach(function(el){
+        el.style.animation = 'none';
+        void el.offsetWidth;
+        el.style.animation = '';
+      });
+    });
+  }
+
+  function drawChart(officialCost, cardCost, parallelCost){
+    var canvas = document.getElementById('comparison-chart');
+    if(typeof Chart === 'undefined'){
+      canvas.parentElement.innerHTML = '<p style="color:var(--muted);text-align:center;padding-top:80px;">تعذر تحميل الرسم البياني</p>';
+      return;
+    }
+    var ctx = canvas.getContext('2d');
+    if(state.chart){ state.chart.destroy(); }
+    state.chart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: ['الرسمي', 'بطاقتك', 'الموازي'],
+        datasets: [{
+          data: [officialCost, cardCost, parallelCost],
+          backgroundColor: ['#94a3b8', '#2563eb', '#dc2626'],
+          borderRadius: 8,
+          maxBarThickness: 56
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false }, tooltip: { enabled: true } },
+        scales: {
+          y: { display: false, beginAtZero: true },
+          x: { grid: { display: false }, ticks: { font: { family: 'Tajawal', weight: '700' }, color: '#64748b' } }
+        }
+      }
+    });
+  }
+})();
+</script>
+</body>
+</html>
